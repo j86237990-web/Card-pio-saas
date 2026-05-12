@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Entregador - Moto Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-900 text-white font-sans">
+
+    <header class="p-6 bg-slate-800 border-b border-slate-700">
+        <h1 class="text-xl font-black italic tracking-tighter text-orange-500">ENTREGADOR MASTER</h1>
+        <p class="text-xs text-slate-400 font-bold uppercase">Pedidos em Rota de Entrega</p>
+    </header>
+
+    <main id="lista-entregas" class="p-4 space-y-4">
+        <!-- Entregas aparecem aqui -->
+        <div class="text-center py-20 opacity-20">
+            <i class="fas fa-motorcycle text-6xl mb-4"></i>
+            <p class="font-bold">Aguardando novos pedidos...</p>
+        </div>
+    </main>
+
+    <script>
+        // Use a MESMA CONFIGURAÇÃO do arquivo index.html
+        const firebaseConfig = {
+  apiKey: "AIzaSyA97tk1YHbj_Zx0fgsdtLGIgqLRySx628o",
+  authDomain: "hamburguer-traller.firebaseapp.com",
+  databaseURL: "https://hamburguer-traller-default-rtdb.firebaseio.com",
+  projectId: "hamburguer-traller",
+  storageBucket: "hamburguer-traller.firebasestorage.app",
+  messagingSenderId: "892971739544",
+  appId: "1:892971739544:web:4817633fd9646b7141a3ed",
+  measurementId: "G-9EL9TMPDLL"
+};
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        db.ref('pedidos').on('value', snap => {
+            const container = document.getElementById('lista-entregas');
+            container.innerHTML = "";
+            let temPedido = false;
+
+            snap.forEach(i => {
+                const ped = i.val();
+                if(ped.status === 'em_rota') {
+                    temPedido = true;
+                    container.innerHTML += `
+                        <div class="bg-slate-800 p-6 rounded-[2rem] border border-slate-700 shadow-2xl">
+                            <div class="flex justify-between items-start mb-4">
+                                <span class="bg-orange-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase">Em Rota</span>
+                                <h3 class="text-xl font-black">R$ ${ped.total}</h3>
+                            </div>
+                            
+                            <div class="space-y-3 mb-6">
+                                <div class="flex items-start gap-3">
+                                    <i class="fas fa-map-marker-alt text-orange-500 mt-1"></i>
+                                    <p class="text-sm font-bold text-slate-200">${ped.enderecoCli}</p>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <i class="fas fa-hamburger text-slate-500 mt-1"></i>
+                                    <p class="text-xs text-slate-400 font-medium">${ped.itens}</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-900 p-4 rounded-2xl space-y-3 border border-slate-700">
+                                <label class="text-[10px] font-black text-slate-500 uppercase">Validar Código do Cliente</label>
+                                <div class="flex gap-2">
+                                    <input type="number" id="input-${i.key}" placeholder="0000" class="w-full bg-slate-800 p-3 rounded-xl border border-slate-600 text-center font-black text-xl outline-none focus:border-orange-500">
+                                    <button onclick="confirmarEntrega('${i.key}', ${ped.codigo})" class="bg-green-600 px-6 rounded-xl font-black">OK</button>
+                                </div>
+                            </div>
+                            
+                            <a href="https://www.google.com/maps/search/${encodeURIComponent(ped.enderecoCli)}" target="_blank" class="block w-full text-center mt-4 text-xs font-black text-slate-500 underline">VER NO MAPA</a>
+                        </div>
+                    `;
+                }
+            });
+
+            if(!temPedido) {
+                container.innerHTML = `
+                    <div class="text-center py-20 opacity-20">
+                        <i class="fas fa-motorcycle text-6xl mb-4"></i>
+                        <p class="font-bold">Nenhum pedido em rota no momento.</p>
+                    </div>`;
+            }
+        });
+
+        function confirmarEntrega(key, codigoCorreto) {
+            const inputVal = document.getElementById(`input-${key}`).value;
+            if(inputVal == codigoCorreto) {
+                db.ref(`pedidos/${key}/status`).set('finalizado').then(() => {
+                    alert("Entrega confirmada com sucesso! 🚀");
+                });
+            } else {
+                alert("Código incorreto! Peça ao cliente o código que está no WhatsApp dele.");
+            }
+        }
+    </script>
+</body>
+</html>
